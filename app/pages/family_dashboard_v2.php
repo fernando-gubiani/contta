@@ -14,13 +14,14 @@ if (mysqli_num_rows($checkTable) == 0) {
     mysqli_query($bdConexao, "CREATE TABLE IF NOT EXISTS familias (id_familia INT AUTO_INCREMENT PRIMARY KEY, nome_familia VARCHAR(100))");
     mysqli_query($bdConexao, "CREATE TABLE IF NOT EXISTS membros_familia (id_membro INT AUTO_INCREMENT PRIMARY KEY, id_familia INT, id_usuario INT, papel VARCHAR(20))");
     mysqli_query($bdConexao, "INSERT IGNORE INTO familias (id_familia, nome_familia) VALUES (1, \"Família Geral\")");
-    // Vincula o usuário logado à família se não estiver vinculado
-    $uName = $_SESSION["username"];
-    $resU = mysqli_query($bdConexao, "SELECT id_usuario FROM usuarios WHERE login = \"$uName\"");
-    if ($userRow = mysqli_fetch_assoc($resU)) {
-        $uid = $userRow["id_usuario"];
-        mysqli_query($bdConexao, "INSERT IGNORE INTO membros_familia (id_familia, id_usuario, papel) VALUES (1, $uid, \"admin\")");
-    }
+}
+
+// Garante que o usuário logado está vinculado à família 1
+$uName = $_SESSION["username"];
+$resU = mysqli_query($bdConexao, "SELECT ID FROM usuarios WHERE login = \"$uName\"");
+if ($userRow = mysqli_fetch_assoc($resU)) {
+    $uid = $userRow["ID"];
+    mysqli_query($bdConexao, "INSERT IGNORE INTO membros_familia (id_familia, id_usuario, papel) VALUES (1, $uid, \"admin\")");
 }
 ?>
 <!DOCTYPE html>
@@ -49,7 +50,6 @@ if (mysqli_num_rows($checkTable) == 0) {
         <a href="dashboard_v2.php" class="btn">Voltar</a>
     </div>
 
-    <!-- Resumo -->
     <div class="card" style="background: linear-gradient(135deg, var(--primary) 0%, #312E81 100%); color: white; border: none; margin-bottom: 2rem;">
         <div style="font-size:0.8rem; opacity:0.8; font-weight:700;">SALDO TOTAL DA FAMÍLIA</div>
         <?php
@@ -62,11 +62,12 @@ if (mysqli_num_rows($checkTable) == 0) {
     <div class="card">
         <h3 style="margin-bottom:1.5rem;">👥 Membros da Família</h3>
         <?php
-        $sql = "SELECT u.login, u.id_usuario FROM usuarios u JOIN membros_familia mf ON u.id_usuario = mf.id_usuario WHERE mf.id_familia = $familyId";
+        // Nome da coluna ID corrigido conforme o schema (ID em maiúsculo)
+        $sql = "SELECT u.login, u.ID as user_id FROM usuarios u JOIN membros_familia mf ON u.ID = mf.id_usuario WHERE mf.id_familia = $familyId";
         $membros = mysqli_query($bdConexao, $sql);
         if ($membros) {
             while($m = mysqli_fetch_assoc($membros)) {
-                $uid = $m["id_usuario"];
+                $uid = $m["user_id"];
                 $resInd = mysqli_query($bdConexao, "SELECT SUM(CASE WHEN tipo=\"receita\" THEN valor ELSE -valor END) as total FROM extrato WHERE id_usuario=$uid AND id_familia=$familyId");
                 $indTotal = mysqli_fetch_assoc($resInd)["total"]??0;
                 
